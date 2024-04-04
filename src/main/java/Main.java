@@ -28,21 +28,29 @@ public class Main {
             while (true) {
                 // Wait for connection from client.
                 Socket clientSocket = serverSocket.accept();
-                executorService.submit(() -> handlePing(clientSocket));
+                executorService.submit(() -> handleCommand(clientSocket));
             }
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         }
     }
 
-    private static void handlePing(Socket clientSocket) {
+    private static void handleCommand(Socket clientSocket) {
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             while (true) {
                 String s = br.readLine();
-                if ("ping".equalsIgnoreCase(s)) {
-                    clientSocket.getOutputStream().write(PONG.getBytes(StandardCharsets.UTF_8));
-                    clientSocket.getOutputStream().flush();
+                switch (s.toLowerCase()) {
+                    case "ping" -> {
+                        clientSocket.getOutputStream().write(PONG.getBytes(StandardCharsets.UTF_8));
+                        clientSocket.getOutputStream().flush();
+                    }
+                    case "echo" -> {
+                        br.readLine();
+                        String echo = br.readLine();
+                        clientSocket.getOutputStream().write("+%s\r\n".formatted(echo).getBytes(StandardCharsets.UTF_8));
+                        clientSocket.getOutputStream().flush();
+                    }
                 }
             }
         } catch (IOException e) {
