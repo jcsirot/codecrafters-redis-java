@@ -1,14 +1,21 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class Main {
+
+    private static final String PING = "*1\r\n$4\r\nping\r\n";
+    private static final String PONG = "$4\r\nPONG\r\n";
+
     public static void main(String[] args) {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
         System.out.println("Logs from your program will appear here!");
 
         //  Uncomment this block to pass the first stage
-        ServerSocket serverSocket = null;
+        ServerSocket serverSocket;
         Socket clientSocket = null;
         int port = 6379;
         try {
@@ -16,8 +23,18 @@ public class Main {
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
             // ensures that we don't run into 'Address already in use' errors
             serverSocket.setReuseAddress(true);
-            // Wait for connection from client.
-            clientSocket = serverSocket.accept();
+            while (true) {
+                // Wait for connection from client.
+                clientSocket = serverSocket.accept();
+                BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                char[] chrs = new char[14];
+                br.read(chrs);
+                String str = new String(chrs);
+                if (PING.equals(str)) {
+                    clientSocket.getOutputStream().write(PONG.getBytes(StandardCharsets.US_ASCII));
+                    clientSocket.close();
+                }
+            }
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         } finally {
