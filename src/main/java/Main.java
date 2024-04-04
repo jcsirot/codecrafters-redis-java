@@ -18,15 +18,25 @@ public class Main {
 
         //  Uncomment this block to pass the first stage
         ServerSocket serverSocket;
-        Socket clientSocket = null;
         int port = 6379;
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
         try {
             serverSocket = new ServerSocket(port);
+            serverSocket.setReuseAddress(true);
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
             // ensures that we don't run into 'Address already in use' errors
-            serverSocket.setReuseAddress(true);
-            // Wait for connection from client.
-            clientSocket = serverSocket.accept();
+            while (true) {
+                // Wait for connection from client.
+                Socket clientSocket = serverSocket.accept();
+                executorService.submit(() -> handlePing(clientSocket));
+            }
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getMessage());
+        }
+    }
+
+    private static void handlePing(Socket clientSocket) {
+        try {
             BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             while (true) {
                 String s = br.readLine();
