@@ -6,6 +6,7 @@ import org.chelonix.redis.resp.RESPParser;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -17,6 +18,7 @@ public class Main {
     private static final String PONG = "+PONG\r\n";
 
     private static final Map<String, String> MAP = new HashMap<>();
+    private static final Map<String, ZonedDateTime> TIMEOUT = new HashMap<>();
 
     public static void main(String[] args) {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -63,6 +65,19 @@ public class Main {
                     case GetCommand getCommand -> {
                         String key = getCommand.getKey();
                         String value = MAP.get(key);
+                        if (value == null) {
+                            bw.write("$-1\r\n");
+                            bw.flush();
+                            return;
+                        }
+                        ZonedDateTime timeout = TIMEOUT.get(key);
+                        if (timeout != null && timeout.isBefore(ZonedDateTime.now())) {
+                            bw.write("$-1\r\n");
+                            bw.flush();
+                            TIMEOUT.remove(key);
+                            MAP.remove(key);
+                            return;
+                        }
                         bw.write("$%d\r\n%s\r\n".formatted(value.length(), value));
                         bw.flush();
                     }
@@ -70,6 +85,9 @@ public class Main {
                         String key = setCommand.getKey();
                         String value = setCommand.getValue();
                         MAP.put(key, value);
+                        if (setCommand.hasExpiry()) {
+                            TIMEOUT.put(key, ZonedDateTime.now().plus(setCommand.getDuration()));
+                        }
                         bw.write("+OK\r\n");
                         bw.flush();
                     }

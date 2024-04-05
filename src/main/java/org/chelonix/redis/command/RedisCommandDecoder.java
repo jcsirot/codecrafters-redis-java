@@ -4,6 +4,7 @@ import org.chelonix.redis.resp.RESPParser;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.time.Duration;
 
 public class RedisCommandDecoder {
 
@@ -38,7 +39,13 @@ public class RedisCommandDecoder {
             case "SET" -> {
                 String key = respParser.consumeString();
                 String value = respParser.consumeString();
-                yield new SetCommand(key, value);
+                SetCommand command = new SetCommand(key, value);
+                if (len >= 5) {
+                    String exp = respParser.consumeString();
+                    long timeout = Long.parseLong(respParser.consumeString());
+                    command.setDuration(Duration.ofMillis(timeout));
+                }
+                yield command;
             }
             case "GET" -> {
                 String key = respParser.consumeString();

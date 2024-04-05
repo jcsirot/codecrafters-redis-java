@@ -1,7 +1,7 @@
 package org.chelonix.redis.resp;
 
 public enum RESPType {
-    SIMPLE_STRING('+'), ARRAY('*'), BULK_STRING('$');
+    SIMPLE_STRING('+'), ARRAY('*'), BULK_STRING('$'), INTEGER(':');
 
     private char prefix;
 

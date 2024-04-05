@@ -1,11 +1,14 @@
 package org.chelonix.redis.command;
 
+import java.time.Duration;
+
 public class SetCommand implements RedisCommand {
 
     private final String key;
     private final String value;
+    private Duration duration;
 
-    public SetCommand(String key, String value) {
+    SetCommand(String key, String value) {
         this.key = key;
         this.value = value;
     }
@@ -21,5 +24,17 @@ public class SetCommand implements RedisCommand {
 
     public String getValue() {
         return value;
+    }
+
+    public Duration getDuration() {
+        return duration;
+    }
+
+    public boolean hasExpiry() {
+        return duration != null;
+    }
+
+    void setDuration(Duration duration) {
+        this.duration = duration;
     }
 }

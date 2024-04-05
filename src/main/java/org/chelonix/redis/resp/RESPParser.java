@@ -48,6 +48,14 @@ public class RESPParser {
         }
     }
 
+    public int consumeInteger() throws IOException {
+        String nextToken = getNextToken();
+        if (!RESPType.INTEGER.matches(nextToken)) {
+            throw new IllegalArgumentException("Expected Integer, found %s".formatted(nextToken.charAt(0)));
+        }
+        return Integer.parseInt(nextToken.substring(1));
+    }
+
     public String consumeSimpleString() throws IOException {
         String nextToken = getNextToken();
         if (!RESPType.SIMPLE_STRING.matches(nextToken)) {
