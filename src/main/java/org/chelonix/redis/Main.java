@@ -1,9 +1,13 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+package org.chelonix.redis;
+
+import org.chelonix.redis.command.*;
+import org.chelonix.redis.resp.RESPParser;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,6 +15,8 @@ public class Main {
 
     private static final String PING = "*1\r\n$4\r\nping\r\n";
     private static final String PONG = "+PONG\r\n";
+
+    private static final Map<String, String> MAP = new HashMap<>();
 
     public static void main(String[] args) {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -38,19 +44,36 @@ public class Main {
     private static void handleCommand(Socket clientSocket) {
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+            RedisCommandDecoder commandParser = new RedisCommandDecoder(new RESPParser(br));
             while (true) {
-                String s = br.readLine();
-                switch (s.toLowerCase()) {
-                    case "ping" -> {
-                        clientSocket.getOutputStream().write(PONG.getBytes(StandardCharsets.UTF_8));
-                        clientSocket.getOutputStream().flush();
+                RedisCommand cmd = commandParser.decode();
+                if (cmd == null) {
+                    return;
+                }
+                switch (cmd) {
+                    case PingCommand __ -> {
+                        bw.write(PONG);
+                        bw.flush();
                     }
-                    case "echo" -> {
-                        br.readLine();
-                        String echo = br.readLine();
-                        clientSocket.getOutputStream().write("+%s\r\n".formatted(echo).getBytes(StandardCharsets.UTF_8));
-                        clientSocket.getOutputStream().flush();
+                    case EchoCommand echoCommand -> {
+                        bw.write("+%s\r\n".formatted(echoCommand.getMessage()));
+                        bw.flush();
                     }
+                    case GetCommand getCommand -> {
+                        String key = getCommand.getKey();
+                        String value = MAP.get(key);
+                        bw.write("$%d\r\n%s\r\n".formatted(value.length(), value));
+                        bw.flush();
+                    }
+                    case SetCommand setCommand -> {
+                        String key = setCommand.getKey();
+                        String value = setCommand.getValue();
+                        MAP.put(key, value);
+                        bw.write("+OK\r\n");
+                        bw.flush();
+                    }
+                    default -> throw new UnsupportedOperationException("Unhandeled command: " + cmd.getType());
                 }
             }
         } catch (IOException e) {
