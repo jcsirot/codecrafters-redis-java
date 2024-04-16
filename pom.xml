@@ -16,9 +16,15 @@
         <junit-jupiter-engine.version>5.9.3</junit-jupiter-engine.version>
         <mockito-core.version>5.11.0</mockito-core.version>
         <assertj-core.version>3.24.2</assertj-core.version>
+        <jcommander.version>1.83</jcommander.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.jcommander</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>${jcommander.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
@@ -35,6 +41,7 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${assertj-core.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
