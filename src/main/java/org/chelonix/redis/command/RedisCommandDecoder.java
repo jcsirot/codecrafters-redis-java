@@ -32,6 +32,13 @@ public class RedisCommandDecoder {
                 }
                 yield new PingCommand();
             }
+            case "INFO" -> {
+                String section = null;
+                if (len == 2) {
+                    section = respParser.consumeString();
+                }
+                yield new InfoCommand(section);
+            }
             case "ECHO" -> {
                 String message = respParser.consumeString();
                 yield new EchoCommand(message);

@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.chelonix.redis.command.EchoCommand;
 import org.chelonix.redis.command.GetCommand;
+import org.chelonix.redis.command.InfoCommand;
 import org.chelonix.redis.command.PingCommand;
 import org.chelonix.redis.command.RedisCommand;
 import org.chelonix.redis.command.RedisCommandDecoder;
@@ -35,6 +36,10 @@ public class Main {
 
   private static final Map<String, String> MAP = new HashMap<>();
   private static final Map<String, ZonedDateTime> TIMEOUT = new HashMap<>();
+
+  private static String bulkString(String s) {
+    return "$%d\r\n%s\r\n".formatted(s.length(), s);
+  }
 
   public static void main(String[] argv) {
     Args args = new Args();
@@ -83,6 +88,10 @@ public class Main {
           }
           case EchoCommand echoCommand -> {
             bw.write("+%s\r\n".formatted(echoCommand.getMessage()));
+            bw.flush();
+          }
+          case InfoCommand infoCommand -> {
+            bw.write(bulkString("role:master"));
             bw.flush();
           }
           case GetCommand getCommand -> {
