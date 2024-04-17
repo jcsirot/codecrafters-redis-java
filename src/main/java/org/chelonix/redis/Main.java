@@ -11,6 +11,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,11 +30,13 @@ public class Main {
 
     @Parameter(names = {"--port", "-p"}, description = "Server port")
     private Integer port = 6379;
+
+    @Parameter(names = { "--replicaof" }, arity = 2, description = "master host and port")
+    private List<String> masterHostAndPort;
   }
 
   private static final String PING = "*1\r\n$4\r\nping\r\n";
   private static final String PONG = "+PONG\r\n";
-
   private static final Map<String, String> MAP = new HashMap<>();
   private static final Map<String, ZonedDateTime> TIMEOUT = new HashMap<>();
 
@@ -63,14 +66,14 @@ public class Main {
       while (true) {
         // Wait for connection from client.
         Socket clientSocket = serverSocket.accept();
-        executorService.submit(() -> handleCommand(clientSocket));
+        executorService.submit(() -> handleCommand(clientSocket, args));
       }
     } catch (IOException e) {
       System.out.println("IOException: " + e.getMessage());
     }
   }
 
-  private static void handleCommand(Socket clientSocket) {
+  private static void handleCommand(Socket clientSocket, Args args) {
     try {
       BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
       BufferedWriter bw = new BufferedWriter(
@@ -91,7 +94,11 @@ public class Main {
             bw.flush();
           }
           case InfoCommand infoCommand -> {
-            bw.write(bulkString("role:master"));
+            if (args.masterHostAndPort == null) {
+              bw.write(bulkString("role:master"));
+            } else {
+              bw.write(bulkString("role:slave"));
+            }
             bw.flush();
           }
           case GetCommand getCommand -> {
