@@ -10,11 +10,11 @@ import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.random.RandomGenerator;
+
 import org.chelonix.redis.command.EchoCommand;
 import org.chelonix.redis.command.GetCommand;
 import org.chelonix.redis.command.InfoCommand;
@@ -40,6 +40,8 @@ public class Main {
   private static final Map<String, String> MAP = new HashMap<>();
   private static final Map<String, ZonedDateTime> TIMEOUT = new HashMap<>();
 
+  private static final byte[] REPLICA_ID = new byte[40];
+
   private static String bulkString(String s) {
     return "$%d\r\n%s\r\n".formatted(s.length(), s);
   }
@@ -53,6 +55,8 @@ public class Main {
 
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     System.out.println("Logs from your program will appear here!");
+
+    RandomGenerator.getDefault().nextBytes(REPLICA_ID);
 
     //  Uncomment this block to pass the first stage
     ServerSocket serverSocket;
@@ -95,7 +99,11 @@ public class Main {
           }
           case InfoCommand infoCommand -> {
             if (args.masterHostAndPort == null) {
-              bw.write(bulkString("role:master"));
+              StringBuilder sb = new StringBuilder();
+              sb.append("role:master\r\n");
+              sb.append("master_replid:%s\r\n".formatted(HexFormat.of().formatHex(REPLICA_ID)));
+              sb.append("master_repl_offset:0");
+              bw.write(bulkString(sb.toString()));
             } else {
               bw.write(bulkString("role:slave"));
             }
